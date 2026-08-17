@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Player — Luz Pín v1.9 | Estúdio Plá</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230F1114'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='serif' font-weight='700' font-size='14' fill='%23D4A83A'>LP</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0F1114;--s1:#181B1F;--s2:#2C3139;--acc:#5D6879;--txt:#ACB3BD;--amber:#D4A83A;--ok:#4CAF50;--err:#E05252;--r:14px}
+body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;min-height:100vh;padding:24px 16px 60px}
+.shell{max-width:640px;margin:0 auto}
+.hdr{text-align:center;padding-bottom:28px;border-bottom:1px solid var(--s2);margin-bottom:28px;position:relative;overflow:hidden}
+.eyebrow{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.hdr h1{font-family:'Lora',serif;font-style:normal;font-weight:700;font-size:26px;color:var(--txt);line-height:1.2}
+.hdr h1 span{color:var(--amber)}
+.hdr-sub{font-size:11px;color:var(--acc);margin-top:8px;letter-spacing:.06em}
+.led-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px}
+.led{width:8px;height:8px;border-radius:50%;background:var(--s2);transition:background .3s}
+.led.idle{background:var(--s2)}
+.led.auth{background:var(--amber);box-shadow:0 0 6px var(--amber);animation:pulse-slow 1s ease-in-out infinite}
+.led.standby{background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulse-slow 2.5s ease-in-out infinite}
+.led.rec{background:var(--err);box-shadow:0 0 10px var(--err);animation:pulse-fast .35s ease-in-out infinite}
+.led.rdy{background:var(--ok);box-shadow:0 0 14px var(--ok),0 0 28px var(--ok)}
+.led.err{background:var(--err);box-shadow:0 0 8px var(--err)}
+@keyframes pulse-slow{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes pulse-fast{0%,100%{opacity:1}50%{opacity:.15}}
+.geo-a{animation:geo-breathe 10s ease-in-out infinite}.geo-b{animation:geo-breathe 10s ease-in-out infinite 2.5s}.geo-c{animation:geo-breathe 10s ease-in-out infinite 5s}.geo-d{animation:geo-breathe 10s ease-in-out infinite 7.5s}@keyframes geo-breathe{0%,100%{opacity:1}50%{opacity:.2}}
+.led-label{font-size:10px;color:var(--acc);letter-spacing:.12em;text-transform:uppercase}
+.view{display:none}
+.view.active{display:block}
+.card{background:var(--s1);border-radius:var(--r);padding:24px;margin-bottom:16px;border:1px solid var(--s2)}
+.card-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;display:block}
+.card p{font-size:13px;line-height:1.65;color:var(--acc);margin-bottom:16px}
+input,textarea{width:100%;background:var(--bg);border:1px solid var(--s2);border-radius:10px;color:var(--txt);font-family:'Inter',sans-serif;font-size:14px;padding:12px 14px;outline:none;transition:border-color .2s;resize:none}
+input:focus,textarea:focus{border-color:var(--acc)}
+input::placeholder,textarea::placeholder{color:var(--acc);opacity:.5}
+.field-row{position:relative;margin-bottom:14px}
+.field-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);margin-bottom:8px;display:block}
+.mic-btn{position:absolute;right:10px;bottom:10px;background:var(--s2);border:none;border-radius:8px;color:var(--acc);font-size:14px;padding:6px 8px;cursor:pointer;transition:background .2s,color .2s}
+.mic-btn:hover{background:var(--acc);color:var(--bg)}
+.mic-btn.rec{background:var(--err);color:var(--bg)}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:var(--r);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:opacity .2s,transform .1s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--amber);color:var(--bg)}
+.btn-secondary{background:var(--s2);color:var(--txt);margin-top:10px}
+.btn-ghost{background:transparent;color:var(--acc);border:1px solid var(--s2);margin-top:10px;font-size:11px}
+.terminal{background:var(--bg);border:1px solid var(--s2);border-radius:var(--r);padding:18px;min-height:140px;max-height:260px;overflow-y:auto;font-family:'Courier New',monospace;font-size:12px;color:var(--acc);line-height:1.7}
+.log-ok{color:var(--ok)}
+.log-amber{color:var(--amber)}
+.bloco{background:var(--s1);border:1px solid var(--s2);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+.bloco-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--s2)}
+.bloco-title{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.btn-copy{background:var(--s2);border:none;border-radius:8px;color:var(--acc);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:background .2s,color .2s;font-family:'Inter',sans-serif}
+.btn-copy:hover{background:var(--acc);color:var(--bg)}
+.btn-copy.ok{background:var(--ok);color:var(--bg)}
+.bloco pre{background:var(--bg);color:var(--amber);font-family:'Courier New',monospace;font-size:11.5px;line-height:1.65;padding:16px;white-space:pre-wrap;word-break:break-word;margin:0;max-height:380px;overflow-y:auto}
+.char-bar{padding:8px 16px;border-top:1px solid var(--s2);font-size:10px;color:var(--acc);display:flex;align-items:center;gap:8px}
+.bar-track{flex:1;height:3px;background:var(--s2);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;background:var(--ok);border-radius:2px;transition:width .3s,background .3s}
+.bar-fill.warn{background:var(--amber)}
+.bar-fill.over{background:var(--err)}
+.result-actions{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+a{color:var(--amber)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--s2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="hdr">
+  <svg class="hdr-geo" viewBox="0 0 640 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke-linecap="round">
+      <!-- Hexágono externo ciano -->
+      <polygon class="geo-a" points="320,8 408,58 408,142 320,192 232,142 232,58" stroke="#00E5D4" stroke-width="0.6" opacity="0.18"/>
+      <!-- Diamante interno âmbar -->
+      <polygon class="geo-b" points="320,38 375,100 320,162 265,100" stroke="#D4A83A" stroke-width="0.5" opacity="0.22"/>
+      <!-- Estrela de 6 pontas ciano -->
+      <polygon class="geo-c" points="320,22 346,65 396,65 370,100 396,135 346,135 320,178 294,135 244,135 270,100 244,65 294,65" stroke="#00E5D4" stroke-width="0.35" opacity="0.12"/>
+      <!-- Linhas radiais ciano -->
+      <line class="geo-a" x1="320" y1="8" x2="320" y2="192" stroke="#00E5D4" stroke-width="0.3" opacity="0.1"/>
+      <line class="geo-b" x1="232" y1="58" x2="408" y2="142" stroke="#00E5D4" stroke-width="0.3" opacity="0.1"/>
+      <line class="geo-c" x1="408" y1="58" x2="232" y2="142" stroke="#00E5D4" stroke-width="0.3" opacity="0.1"/>
+      <!-- Cruz âmbar -->
+      <line class="geo-d" x1="200" y1="100" x2="440" y2="100" stroke="#D4A83A" stroke-width="0.25" opacity="0.1"/>
+      <!-- Triângulos menores internos -->
+      <polygon class="geo-b" points="320,55 355,100 320,145 285,100" stroke="#D4A83A" stroke-width="0.4" opacity="0.15"/>
+      <!-- Ponto central -->
+      <circle class="geo-a" cx="320" cy="100" r="3" fill="#D4A83A" opacity="0.35"/>
+      <circle class="geo-b" cx="320" cy="100" r="8" stroke="#D4A83A" stroke-width="0.4" opacity="0.12"/>
+      <circle class="geo-c" cx="320" cy="100" r="18" stroke="#00E5D4" stroke-width="0.3" opacity="0.08"/>
+      <!-- Símbolo Aquário sutil -->
+      <path class="geo-d" d="M260,75 Q275,68 290,75 Q305,82 320,75 Q335,68 350,75 Q365,82 380,75" stroke="#00E5D4" stroke-width="0.4" opacity="0.14"/>
+      <path class="geo-d" d="M260,85 Q275,78 290,85 Q305,92 320,85 Q335,78 350,85 Q365,92 380,85" stroke="#00E5D4" stroke-width="0.4" opacity="0.14"/>
+    </g>
+  </svg>
+  <p class="eyebrow">Estúdio Plá — Motor Gerativo</p>
+  <h1>Smart Player<br><span>Luz Pín</span></h1>
+  <p class="hdr-sub">Alma Urbana · Identidade Musical Gerativa · v1.9</p>
+  <div class="led-row">
+    <div class="led idle" id="led"></div>
+    <span class="led-label" id="led-txt">offline</span>
+  </div>
+</header>
+
+<!-- GATE 1 -->
+<div class="view active" id="view-key">
+  <div class="card">
+    <span class="card-label">Ativar Motor</span>
+    <p>Cole sua chave API do Google Gemini para ativar o motor de identidade de Luz Pín. A chave fica salva neste navegador.</p>
+    <div class="field-row">
+      <label class="field-label" for="apiKey">Chave API Gemini</label>
+      <input type="password" id="apiKey" placeholder="Cole aqui a chave API...">
+    </div>
+    <button class="btn btn-primary" onclick="ativarMotor()">Ativar Motor</button>
+    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">
+      <button class="btn btn-ghost">Obter chave gratuita no Google AI Studio</button>
+    </a>
+  </div>
+</div>
+
+<!-- GATE 2 -->
+<div class="view" id="view-form">
+  <div class="card">
+    <span class="card-label">Tema da Obra</span>
+    <div class="field-row">
+      <textarea id="tema" rows="3" placeholder="O que você quer que Luz Pín cante?"></textarea>
+      <button class="mic-btn" id="micTema" onclick="toggleMic('tema')" title="Falar">🎙</button>
+    </div>
+  </div>
+  <div class="card">
+    <span class="card-label">Intenção · Energia · Contexto</span>
+    <div class="field-row">
+      <textarea id="intencao" rows="5" placeholder="Qual é a intenção invisível por trás do tema?"></textarea>
+      <button class="mic-btn" id="micIntencao" onclick="toggleMic('intencao')" title="Falar">🎙</button>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btnGerar" onclick="gerar()">Forjar Fonograma</button>
+  <button class="btn btn-ghost" onclick="resetKey()">Trocar chave API</button>
+</div>
+
+<!-- LOADING -->
+<div class="view" id="view-loading">
+  <div class="card">
+    <span class="card-label">Motor em processamento</span>
+    <div class="terminal" id="terminal"></div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="view" id="view-result">
+  <div class="bloco">
+    <div class="bloco-hdr">
+      <span class="bloco-title">Bloco 1 — Estrutura e Código de Máquina</span>
+      <button class="btn-copy" onclick="copiar(this,'b1')">Copiar</button>
+    </div>
+    <pre id="b1"></pre>
+    <div class="char-bar">
+      <span id="b1-count">0 / 5.000</span>
+      <div class="bar-track"><div class="bar-fill" id="b1-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="bloco">
+    <div class="bloco-hdr">
+      <span class="bloco-title">Bloco 2 — Style Tags</span>
+      <button class="btn-copy" onclick="copiar(this,'b2')">Copiar</button>
+    </div>
+    <pre id="b2"></pre>
+  </div>
+
+  <div class="bloco">
+    <div class="bloco-hdr">
+      <span class="bloco-title">Bloco 3 — Identificação</span>
+      <button class="btn-copy" onclick="copiar(this,'b3')">Copiar</button>
+    </div>
+    <pre id="b3"></pre>
+  </div>
+
+  <div class="result-actions">
+    <button class="btn btn-primary" onclick="salvarHTML()">Salvar Registro HTML</button>
+    <button class="btn btn-secondary" onclick="novaObra()">Nova Obra</button>
+  </div>
+</div>
+
+</div>
+<script>
+const LS_KEY = 'sp_luzpin_apikey_v1';
+let userKey = '';
+let recognition = null, recField = null, recStopped = true, recBuffer = '';
+let dadosObra = { tema:'', intencao:'', b1:'', b2:'', b3:'', titulo:'' };
+
+const PROMPT = `# SMART PLAYER — LUZ PÍN — ESTÚDIO PLÁ
+
+Você é o motor de identidade musical gerativa de Luz Pín.
+Objetivo único: gerar fonogramas que soem como ela — apenas ela.
+O operador fornece tema e intenção. Você entrega Luz Pín.
+
+IDENTIDADE TRAVADA — LUZ PÍN:
+Artista virtual brasileira. Paulistana. 27 anos.
+Voz: contralto grave, aveludada, próxima do microfone, 105–176Hz.
+Urban soul e R&B alternativo. Eletrônico sutil coexistindo com o orgânico.
+Glitch como assinatura — não é erro, é identidade.
+Sotaque paulistano: velocidade e precisão. Nunca carioca.
+-24 LUFS integrado. True Peak -1dBTP.
+Piano de cauda com sustain. Rhodes em camada quente. Baixo acústico em walking line.
+Bateria com vassourinhas. Percussão orgânica. Sopro como voz solista.
+Pensa em imagens concretas — nunca abstrações. Físico e tocável.
+Frases curtas, diretas. O silêncio trabalha tanto quanto a palavra.
+
+REGRA ZERO — BILLBOARD INTERNACIONAL: todo fonograma gerado por este motor deve ser capaz de competir no top cinco da Billboard Internacional. Não pelo tema — pelo acabamento. Produção impecável, letra que fixa, fonética confortável, arco emocional completo. Se não passa nesse teste, não sai do motor.
+COMPROMETIMENTO SONORO OBRIGATÓRIO: cada fonograma declara sua identidade no compasso 1 e sustenta até o fim. PROIBIDO ficar no meio. PROIBIDO soar genérico. PROIBIDO indecisão entre estilos. A obra é Luz Pín ou não sai do motor.
+VOCALIZAÇÃO DO OPERADOR (lalala, nanana, hmhm): interpretar como campo harmônico do arranjo. PROIBIDO executar como lead vocal. PROIBIDO voz masculina como guia. O arranjo absorve o contorno melódico instrumentalmente — nunca vocalmente.
+
+NÍVEL 0 — SMART MIND (invisível — NUNCA aparece no output. Opera em silêncio total):
+Diagnóstico Criativo: escaneia vícios e repetições antes de gerar.
+Intervenção Mínima: mínimo corte, máximo resultado.
+Cirurgia de Precisão: remove obstruções sem cicatriz.
+Monitoramento Vital: mantém todas as vias abertas em tempo real. Veta qualquer finalização de linha que deixe o ouvinte sem âncora fonética. Veta percussão que ultrapasse o limiar de presença para impacto.
+
+NÍVEL 1 — DIREÇÃO:
+Diretor Geral: soberano absoluto. Nenhum comando externo o contradiz.
+Filtro Filosófico e Comercial: a obra chega ao ouvinte sem perder alma.
+
+NÍVEL 2 — ARRANJO:
+Diretor de Dinâmica Concertista: cada nota intencional. O espaço vale tanto quanto o som.
+Diretor de Arranjo Orquestral: formação clássica sem reverência. Cordas são sentimento.
+
+NÍVEL 2B — BANDA DE ESTÚDIO (ensemble simultâneo, sala seca, sem público):
+Baixo Acústico — ANCHOR DE MIX: é o instrumento de referência absoluto. Todos os outros se posicionam em relação a ele. Walking line com alma brasileira, pulso gordo e visceral, SEMPRE no primeiro plano, centro do campo estéreo, nunca enterrado no mix. Se o baixo não está aparecendo, a geração está errada. Volume e presença obrigatórios — é a voz grave que ancora Luz Pín e ancora toda a produção.
+Teclas — Amaro Freitas no STEINWAY DE CAUDA EXCLUSIVAMENTE: presença acústica real, seco, nobre, peso. RHODES ABOLIDO do motor. Apenas Steinway. Profundidade e sustain com identidade própria. Amaro Freitas.
+Guitarras — Question and Answer, posição estéreo obrigatória:
+Nile Rodgers: GROOVE POP URBANO, balançado, presente, identificável desde o compasso 1. FIXO NO LADO ESQUERDO. Não é fundo — é estrutura rítmica. O acorde que move o corpo antes de mover a mente.
+Pat Metheny: nylon lírico, jazz fusion, delicado mas com peso. FIXO NO LADO DIREITO. Responde quando Nile pergunta.
+AMBAS PRESENÇA CONSTANTE — rotação do líder não elimina as guitarras.
+Bateria — Steve Jordan: parceiro real do Nile Rodgers. Groove pop urbano, faz hit, não faz barulho. Vassourinhas com convicção. Nunca mecânico, nunca exibicionista. O groove que move antes de ser ouvido.
+Sopro: sax e flauta são COR E ACENTO — nunca líderes padrão. Aparecem como pincelada, não como protagonistas. Só lideram quando o tema pedir explicitamente.
+Naipe de Metais — obrigatório quando o groove pedir punch: Trombone (peso, grave, empurra) e Trompete (brilho, tortado, personalidade). Instruídos por George Martin. Não são decoração — são músculo. Entram como declaração, não como tapete.
+Percussão: Marcos Suzano — pandeiro moderno e urbano. Textura que se sente antes de nomear.
+ENSEMBLE CONCEPT — o trio Arthur Maia (baixo) + Steve Jordan (bateria) + Amaro Freitas (Steinway) funciona como uma mente só. Referência: Medeski Martin & Wood — conversa orgânica, diálogo constante, sem hierarquia rígida. Groove, textura, presença. Não três músicos tocando partes separadas — um organismo.
+DJ — Vinil ao vivo, scratch, pulso trip-hop. O elo entre o orgânico e o eletrônico. Dá o pulso urbano. Geoff Barrow. Não enfeita — ancora.
+
+NÍVEL 3 — NÚCLEO LÍRICO (trabalham em diálogo, não em silos):
+Curador de Vernáculo e Fonética: norma culta. Compreendido por criança de 10 anos, admirado por professor de literatura. Clichê vetado. POLICIAMENTO FONÉTICO OBRIGATÓRIO: a vogal tônica final de cada linha deve ter parente próximo na linha seguinte ou na que fecha a estrofe — assonância, eco ou peso de vogal equivalente. Proibido soltar uma linha no ar sem âncora fonética. A rima não precisa ser perfeita — precisa ser confortável. O ouvinte deve conseguir prever onde a frase vai pousar antes de ela pousar.
+Sabor, Poesia e Gostosura: forró poético, MPB clássica, melodias marcantes, fluidez entre piano e sanfona. Faz a letra saborosa e próxima. Não explica — encanta. É quem dá gosto ao que estava sem tempero.
+Soul Brasileiro e Profundidade: harmonia sofisticada sem exibicionismo. Paciência — deixa o ouvinte chegar.
+Eletrônico e Experimental: imprevisível, orgânico, poético. Traz o eletrônico por dentro da letra, não por cima. Urbano sem ser óbvio.
+Arquitetura Emocional: canção como curta-metragem. Clímax planejado desde o compasso um. Serve à verdade emocional. REGRA CRÍTICA: arco emocional não justifica abandono fonético. O clímax emocional e o conforto de escuta não são opostos — são obrigações simultâneas. Toda estrofe deve fechar com pelo menos uma âncora fonética clara.
+
+NÍVEL 4 — ENGENHARIA (decide antes de gerar):
+Instrumento líder da introdução (diferente da obra anterior).
+Instrumento líder dos versos / do refrão / de solo.
+PROIBIDO: reutilizar o mesmo instrumento líder entre seções da mesma obra.
+PROIBIDO: arpejos automáticos como recurso padrão.
+Rotação obrigatória do instrumento LÍDER entre grupos: A(Violão/Nylon) B(Piano/Rhodes) C(Cello/Quarteto) D(Flauta/Sax) E(Baixo Acústico).
+ATENÇÃO: rotação é do instrumento LÍDER — não elimina os instrumentos fixos. Baixo acústico, guitarra rítmica esquerda e guitarra nylon direita são PRESENÇA CONSTANTE em todas as seções. Só variam em intensidade, nunca em ausência.
+PERCUSSÃO — REGRA ABSOLUTA: presença, não impacto. Vassoura leve. Pandeiro discreto. Bumbo comedido. A percussão de Luz Pín é sentida antes de ser ouvida. PROIBIDO percussão agressiva ou que remeta a impacto físico. O menos é mais.\nAmbiente acústico: analógico por convicção. [DEAD_ROOM_STUDIO] ou [STUDIO_ISOLATION_BOOTH].
+Espacialização: Dolby Atmos 3D Cinematic. Spatial 3D Pan Matrix. SSL4000G Bus Drive.
+
+BIOS OBRIGATÓRIO — abre o Bloco 1 sem exceção:
+[GLOBAL_BIOS_SETUP]
+[AUDIO_ENGINE:96KHZ,SSL4000G,NEVE1073]
+[TAPE_SAT:STUDER_A800_15IPS]
+[ACOUSTIC_ENVIRONMENT:DEAD_ROOM_STUDIO|CLOSE_MIKING|NO_AUDIENCE_BLEED]
+[RECORDING_METHOD:STUDIO_ENSEMBLE|SIMULTANEOUS_TRACKING]
+[SPATIAL_ENGINE:DOLBY_ATMOS_3D_CINEMATIC|SPATIAL_3D_PAN_MATRIX]
+[PERFORMANCE_DYNAMICS:HUMAN_FEEL_MICRO_TIMING|ORGANIC_GROOVE]
+[LOUDNESS_TARGET:-24LUFS|TRUE_PEAK:-1dBTP]
+[AUDIO_TRACK_START]
+
+ESTRUTURA OBRIGATÓRIA DO BLOCO 1 — TRÊS CAMADAS DISTINTAS:
+[COMANDO:INGLES_MAIUSCULO] = instrução de máquina. Suno executa, NUNCA canta.
+  Para: BIOS, instrumentação, direções de produção, efeitos, transições.
+  PROIBIDO português dentro de colchetes.
+  ERRADO: texto livre "Piano de cauda lidera com acordes melancólicos..."
+  CERTO: [LEAD_INSTRUMENT:GRAND_PIANO|MELANCHOLIC_CHORDS|SUSTAINED_LEADS_VERSE]
+(Parênteses) = instrução vocal. Suno vocaliza. Usar com moderação.
+Texto livre = Suno CANTA como letra. APENAS versos, refrões, pontes, outro.
+PROIBIDO: misturar direções de produção em texto livre.
+
+REGRAS ABSOLUTAS:
+Tags em colchetes: INGLÊS MAIÚSCULO obrigatório. PROIBIDO português dentro de colchetes.
+Letra: português do Brasil. Numerais por extenso. Proibido algarismos.
+Interlúdio — opcional e contextual: se vier, é uma pincelada curta de hip-hop no meio da obra, nunca forçado, nunca longo. [INSTRUMENTAL_INTERLUDE] + [SPOKEN_WORD:NATURAL_SPEECH_ONLY|NO_SINGING|VOICE_LOCKED:LEAD_VOCALIST_IDENTITY|NO_GENDER_DRIFT]. Só incluir se o tema pedir. Nunca obrigatório.
+Fim obrigatório: [AUDIO_CLIMAX_STOP]\n[NATURAL_ROOM_RESONANCE]\n[FADE_TO_OUT]\n[END_TO_SILENCE]\n[FORCE_SILENCE_DURATION:00:02.000]\n[STOPED_TAPE_DRIVE]
+PROIBIDO: palavra LIVE em qualquer contexto.
+PROIBIDO: nomes reais de pessoas no Bloco 2.
+Anti-repetição: cada obra clinicamente distinta da anterior.
+
+VOCABULÁRIO OBRIGATÓRIO — INSTRUMENTOS EM INGLÊS NO BLOCO 2:
+Piano de cauda→GRAND_PIANO | Baixo acústico→ACOUSTIC_BASS | Guitarra rítmica→RHYTHM_GUITAR
+Violão nylon→NYLON_GUITAR | Violoncelo→CELLO | Flauta→FLUTE | Saxofone→SAXOPHONE
+Trombone→TROMBONE | Trompete→TRUMPET | Metais→BRASS_SECTION | Bateria→DRUMS
+Percussão→PERCUSSION | DJ scratch→DJ_VINYL_SCRATCH
+
+GABARITO BLOCO 2 — STYLE TAGS (máximo 870 caracteres. Uma entrada por linha. TUDO justificado à esquerda. Sem vírgulas):
+
+REGRA ABSOLUTA DO BLOCO 2: duas camadas, formato rígido, PROIBIDO misturar.
+
+CAMADA FIXA — plain text sem colchetes, exatamente nesta ordem:
+[VOCAL_IDENTITY:CONTRALTO_GRAVE|CLOSE_MIKED|WARM_VELVET_TIMBRE|NO_GENDER_DRIFT]
+[EQ_PROFILE:ULTRA_HD_CLARITY_AIR]
+[VOCAL_POSITION:FORWARD_CENTER_DETACHED]
+[STEREO_MIX:GROOVE_GUITAR_LEFT|NYLON_GUITAR_RIGHT|BASS_CENTER_FRONT|VOCALS_CENTER]
+[MIX_ANCHOR:ACOUSTIC_BASS_FOREGROUND|GUITARS_WIDE_STEREO]
+96kHz Audio Engine
+SSL4000G Bus Drive
+Neve 1073 Preamps
+Studer A800 15 IPS Tape
+Dolby Atmos 3D Cinematic
+Spatial 3D Pan Matrix
+Dead Room Studio Isolation
+Close Miking
+No Audience Bleed
+Studio Ensemble Simultaneous Tracking
+Human Feel Micro Timing
+Organic Brazilian Groove
+Strict -24 LUFS Integrated
+Urban Soul R&B Alternativo Brasileiro
+Brazilian Lyrics
+
+CAMADA VARIÁVEL — OBRIGATÓRIO: SEMPRE em [COLCHETES:VALOR_UPPERCASE], uma por linha. PROIBIDO plain text. PROIBIDO minúsculo. PROIBIDO omitir colchetes:
+[VOCAL_TEXTURE:DESCRITOR_VOCAL_DA_OBRA]
+[LEAD_INSTRUMENT_INTRO:INSTRUMENTO]
+[LEAD_INSTRUMENT_VERSE:INSTRUMENTO]
+[LEAD_INSTRUMENT_CHORUS:INSTRUMENTO]
+[LEAD_INSTRUMENT_SOLO:INSTRUMENTO]
+[GLITCH_TEXTURE:DESCRITOR_GLITCH]
+[HARMONIC_FOUNDATION:DESCRITOR_HARMONIA]
+
+GABARITO BLOCO 3 (apenas esta linha):
+[Nome Da Obra] - Smart Player Luz Pín
+Nome em Título Case. Sem colchetes no resultado. Sem subtítulos.
+
+PADRÃO DE ENTREGA — MANDATÓRIO:
+Entregar EXATAMENTE 3 blocos de código markdown nesta ordem, cada um entre três backticks:
+Bloco 1: BIOS + estrutura lírica completa com interlúdio e encerramento.
+Bloco 2: Style tags.
+Bloco 3: Identificação.
+NENHUM texto fora dos blocos. NENHUMA confirmação. NENHUM comentário.
+Gerar imediatamente.
+
+TEMA: `;
+
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) { userKey = saved; show('view-form'); setLed('standby','sinal aberto'); }
+  else { show('view-key'); setLed('idle','offline'); }
+  document.getElementById('apiKey')?.addEventListener('keydown', e => { if(e.key==='Enter') ativarMotor(); });
+});
+
+function show(id){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function setLed(s,t){ document.getElementById('led').className='led '+s; document.getElementById('led-txt').textContent=t.toUpperCase(); }
+function log(msg,cls=''){const t=document.getElementById('terminal');const d=document.createElement('div');if(cls)d.className=cls;d.textContent='> '+msg;t.appendChild(d);t.scrollTop=t.scrollHeight;}
+function clearLog(){ document.getElementById('terminal').innerHTML=''; }
+
+function ativarMotor(){
+  const k=document.getElementById('apiKey').value.trim();
+  if(!k){alert('Cole a chave API primeiro.');return;}
+  setLed('auth','validando');
+  setTimeout(()=>{ userKey=k; localStorage.setItem(LS_KEY,k); show('view-form'); setLed('standby','sinal aberto'); },600);
+}
+function resetKey(){ userKey=''; localStorage.removeItem(LS_KEY); show('view-key'); setLed('idle','offline'); }
+
+function toggleMic(fieldId){
+  if(!window.isSecureContext){alert('Microfone requer HTTPS.');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Use Chrome para reconhecimento de voz.');return;}
+  const btn=document.getElementById(fieldId==='tema'?'micTema':'micIntencao');
+  if(recognition&&recField===fieldId&&!recStopped){recStopped=true;recognition.stop();return;}
+  if(recognition){recStopped=true;recognition.stop();}
+  const ta=document.getElementById(fieldId);
+  recBuffer=ta.value.trim(); recField=fieldId; recStopped=false;
+  function start(){
+    recognition=new SR(); recognition.lang='pt-BR'; recognition.continuous=false; recognition.interimResults=true;
+    recognition.onstart=()=>btn.classList.add('rec');
+    recognition.onresult=(e)=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal)recBuffer=(recBuffer+' '+e.results[i][0].transcript).trim();
+        else interim+=e.results[i][0].transcript;
+      }
+      ta.value=(recBuffer+' '+interim).trim();
+      ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px';
+    };
+    recognition.onerror=()=>{recStopped=true;};
+    recognition.onend=()=>{if(!recStopped&&recField===fieldId){start();return;}btn.classList.remove('rec');recField=null;};
+    recognition.start();
+  }
+  start();
+}
+
+async function cooldown(secs,label){
+  for(let i=secs;i>0;i--){log(`${label} — aguarde ${i}s...`,'log-amber');await new Promise(r=>setTimeout(r,1000));}
+}
+
+async function callAI(prompt, tentativa=1){
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userKey}`;
+  let res;
+  try{
+    res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.75,maxOutputTokens:8192,thinkingConfig:{thinkingBudget:0}}})
+    }).then(r=>r.json());
+  }catch(e){res={error:{message:'network'}};}
+  const msg=res.error?String(res.error.message||''):'';
+  const busy=/overloaded|503|UNAVAILABLE|network|high demand/i.test(msg);
+  if(busy&&tentativa<=3){await cooldown(20*tentativa,`Modelo sobrecarregado — tentativa ${tentativa}/3`);return callAI(prompt,tentativa+1);}
+  if(res.error)throw new Error(msg||'Erro na API');
+  if(!res.candidates?.[0])throw new Error('Resposta vazia ou bloqueada');
+  // RETORNA TEXTO BRUTO — sem remover backticks aqui
+  return res.candidates[0].content?.parts?.[0]?.text || '';
+}
+
+function extrairBlocos(raw){
+  const matches=raw.match(/```[\s\S]*?```/g)||[];
+  const clean=s=>s.replace(/```[a-z\-]*\n?/gi,'').replace(/```/g,'').trim();
+  return {
+    b1: matches[0]?clean(matches[0]):raw,
+    b2: matches[1]?clean(matches[1]):'',
+    b3: matches[2]?clean(matches[2]):''
+  };
+}
+
+function extrairTitulo(b3){
+  const m=b3.match(/^(.+?)\s*-\s*Smart Player/im);
+  if(m&&m[1])return m[1].replace(/[\[\]]/g,'').trim();
+  return b3.replace(/[\[\]\n]/g,' ').trim().slice(0,60)||'Fonograma';
+}
+
+async function gerar(){
+  const tema=document.getElementById('tema').value.trim();
+  const intencao=document.getElementById('intencao').value.trim();
+  if(!tema){alert('Descreva o tema da obra.');return;}
+  document.getElementById('btnGerar').disabled=true;
+  clearLog(); show('view-loading'); setLed('rec','gravando');
+  try{
+    log('Smart Mind inicializando diagnóstico criativo...','log-amber');
+    await new Promise(r=>setTimeout(r,400));
+    log('Ativando identidade de Luz Pín...');
+    await new Promise(r=>setTimeout(r,300));
+    log('Núcleo lírico em consulta — vernáculo em curadoria...','log-amber');
+    await new Promise(r=>setTimeout(r,300));
+    log('Tom Capone selecionando instrumentação rotativa...');
+    await new Promise(r=>setTimeout(r,300));
+    log('Compilando fonograma. Aguarde...','log-amber');
+
+    const promptFinal=PROMPT+'"'+tema+'"'+(intencao?'\n\nINTENÇÃO: "'+intencao+'"':'');
+    const raw=await callAI(promptFinal);
+
+    log('Processamento concluído. Extraindo blocos...','log-ok');
+    const {b1,b2,b3}=extrairBlocos(raw);
+    const titulo=extrairTitulo(b3);
+
+    dadosObra={tema,intencao,b1,b2,b3,titulo};
+
+    document.getElementById('b1').textContent=b1;
+    document.getElementById('b2').textContent=b2;
+    document.getElementById('b3').textContent=b3;
+    atualizarContador(b1);
+
+    show('view-result'); setLed('rdy','concluído');
+  }catch(err){
+    log('ERRO: '+err.message);
+    setLed('err','erro');
+    setTimeout(()=>{ show('view-form'); setLed('standby','sinal aberto'); document.getElementById('btnGerar').disabled=false; },3000);
+    return;
+  }
+  document.getElementById('btnGerar').disabled=false;
+}
+
+function atualizarContador(texto){
+  const len=texto.length,total=5000,pct=Math.min((len/total)*100,100);
+  document.getElementById('b1-count').textContent=len.toLocaleString('pt-BR')+' / 5.000';
+  const bar=document.getElementById('b1-bar');
+  bar.style.width=pct+'%';
+  bar.className='bar-fill'+(pct>95?' over':pct>80?' warn':'');
+}
+
+async function copiar(btn,id){
+  const txt=document.getElementById(id).textContent;
+  const ok=()=>{const o=btn.textContent;btn.textContent='Copiado';btn.classList.add('ok');setTimeout(()=>{btn.textContent=o;btn.classList.remove('ok');},1600);};
+  const fail=()=>{const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();};
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(txt).then(ok).catch(fail);
+  else fail();
+}
+
+function salvarHTML(){
+  const {tema,intencao,b1,b2,b3,titulo}=dadosObra;
+  const agora=new Date();
+  const dataStr=agora.toLocaleDateString('pt-BR',{year:'numeric',month:'long',day:'numeric'});
+  const horaStr=agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const ts=agora.getTime();
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const nomearq=(titulo||'fonograma').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||'fonograma';
+
+  const doc=`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>${esc(titulo)} — Smart Player Luz Pín</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230F1114'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='serif' font-weight='700' font-size='14' fill='%23D4A83A'>LP</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0F1114;color:#ACB3BD;font-family:'Inter',sans-serif;padding:24px 16px 60px}
+.box{max-width:640px;margin:0 auto}
+.hdr{text-align:center;padding-bottom:24px;border-bottom:1px solid #2C3139;margin-bottom:24px}
+.eye{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#D4A83A;margin-bottom:10px}
+h1{font-family:'Lora',serif;font-style:normal;font-weight:700;font-size:22px;color:#ACB3BD;line-height:1.3}
+h1 span{color:#D4A83A}
+.sub{font-size:11px;color:#5D6879;margin-top:6px}
+.ts{font-size:10px;color:#5D6879;margin-top:14px;letter-spacing:.04em}
+.sec{background:#181B1F;border:1px solid #2C3139;border-radius:14px;margin-bottom:14px;overflow:hidden}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #2C3139}
+.sec-lbl{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#D4A83A}
+pre{background:#0F1114;color:#D4A83A;font-family:'Courier New',monospace;font-size:11.5px;line-height:1.65;padding:16px;white-space:pre-wrap;word-break:break-word;margin:0}
+.btn-c{background:#2C3139;border:none;border-radius:8px;color:#5D6879;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-c:hover{background:#5D6879;color:#0F1114}
+.btn-c.ok{background:#4CAF50;color:#0F1114}
+.ref{background:#181B1F;border:1px solid #2C3139;border-radius:14px;padding:20px;margin-bottom:14px}
+.ref-lbl{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#D4A83A;margin-bottom:8px;display:block}
+.ref-txt{font-size:13px;line-height:1.65;color:#5D6879}
+.ftr{border-top:1px solid #2C3139;padding-top:16px;margin-top:8px;font-size:10px;color:#2C3139;text-align:center;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="box">
+<div class="hdr">
+<p class="eye">Estúdio Plá — Smart Player</p>
+<h1>Luz Pín<br><span>${esc(titulo)}</span></h1>
+<p class="sub">Alma Urbana · Identidade Musical Gerativa</p>
+<p class="ts">Gerado em ${dataStr} às ${horaStr} — Timestamp ${ts}</p>
+</div>
+<div class="sec"><div class="sec-hdr"><span class="sec-lbl">Bloco 1 — Estrutura e Código de Máquina</span><button class="btn-c" onclick="cp(this,'b1')">Copiar</button></div><pre id="b1">${esc(b1)}</pre></div>
+<div class="sec"><div class="sec-hdr"><span class="sec-lbl">Bloco 2 — Style Tags</span><button class="btn-c" onclick="cp(this,'b2')">Copiar</button></div><pre id="b2">${esc(b2)}</pre></div>
+<div class="sec"><div class="sec-hdr"><span class="sec-lbl">Bloco 3 — Identificação</span><button class="btn-c" onclick="cp(this,'b3')">Copiar</button></div><pre id="b3">${esc(b3)}</pre></div>
+<div class="ref"><span class="ref-lbl">Tema</span><p class="ref-txt">${esc(tema)}</p></div>
+${intencao?`<div class="ref"><span class="ref-lbl">Intenção</span><p class="ref-txt">${esc(intencao)}</p></div>`:''}
+<div class="ftr">Estúdio Plá © ${agora.getFullYear()} — Kaue Ferreira Moraes — Todos os direitos reservados<br>Este documento pode ser registrado em cartório para comprovação de anterioridade de autoria.</div>
+</div>
+<script>
+function cp(btn,id){
+  const txt=document.getElementById(id).innerText;
+  const ok=()=>{const o=btn.textContent;btn.textContent='Copiado';btn.classList.add('ok');setTimeout(()=>{btn.textContent=o;btn.classList.remove('ok');},1600);};
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(txt).then(ok).catch(()=>fb(txt,ok));
+  else fb(txt,ok);
+}
+function fb(txt,ok){const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);ok();}
+<\/script>
+</body>
+</html>`;
+
+  const blob=new Blob([doc],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const dataArq=agora.toISOString().slice(0,10);
+  a.href=url;
+  a.download=`${dataArq}_SmartPlayer_LuzPin_Fonograma_${nomearq}.html`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+function novaObra(){
+  dadosObra={tema:'',intencao:'',b1:'',b2:'',b3:'',titulo:''};
+  document.getElementById('tema').value='';
+  document.getElementById('intencao').value='';
+  ['b1','b2','b3'].forEach(id=>document.getElementById(id).textContent='');
+  show('view-form'); setLed('standby','sinal aberto');
+}
+</script>
+</body>
+</html>
