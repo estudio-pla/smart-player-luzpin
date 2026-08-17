@@ -402,7 +402,7 @@ async function callAI(prompt, tentativa=1){
   let res;
   try{
     res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.75,maxOutputTokens:8192}})
+      body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.75,maxOutputTokens:8192,thinkingConfig:{thinkingBudget:0}}})
     }).then(r=>r.json());
   }catch(e){res={error:{message:'network'}};}
   const msg=res.error?String(res.error.message||''):'';
